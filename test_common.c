@@ -124,8 +124,8 @@ int main(int argc, char **argv)
 
         if (argc > 2 && strcmp(argv[1], "--bench") == 0)  // a for auto
             strcpy(word, argv[3]);
-        else
-            fgets(word, sizeof word, stdin);
+        else if (!fgets(word, sizeof word, stdin))
+            break;
 
         switch (*word) {
         case 'a':
