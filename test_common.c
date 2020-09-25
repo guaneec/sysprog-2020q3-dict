@@ -133,8 +133,7 @@ int main(int argc, char **argv)
             if (argc > 2 && strcmp(argv[1], "--bench") == 0)
                 strcpy(Top, argv[4]);
             else if (!fgets(Top, sizeof word, stdin)) {
-                fprintf(stderr, "error: insufficient input.\n");
-                break;
+                goto quit;
             }
             rmcrlf(Top);
 
@@ -158,9 +157,10 @@ int main(int argc, char **argv)
             break;
         case 'f':
             printf("find word in tree: ");
-            if (!fgets(word, sizeof word, stdin)) {
-                fprintf(stderr, "error: insufficient input.\n");
-                break;
+            if (argc > 2 && strcmp(argv[1], "--bench") == 0)
+                strcpy(word, argv[4]);
+            else if (!fgets(word, sizeof word, stdin)) {
+                goto quit;
             }
             rmcrlf(word);
             t1 = tvgetf();
@@ -190,8 +190,7 @@ int main(int argc, char **argv)
             if (argc > 2 && strcmp(argv[1], "--bench") == 0)
                 strcpy(word, argv[4]);
             else if (!fgets(word, sizeof word, stdin)) {
-                fprintf(stderr, "error: insufficient input.\n");
-                break;
+                goto quit;
             }
             rmcrlf(word);
             t1 = tvgetf();
@@ -210,8 +209,7 @@ int main(int argc, char **argv)
         case 'd':
             printf("enter word to del: ");
             if (!fgets(word, sizeof word, stdin)) {
-                fprintf(stderr, "error: insufficient input.\n");
-                break;
+                goto quit;
             }
             rmcrlf(word);
             printf("  deleting %s\n", word);
