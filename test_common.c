@@ -183,6 +183,8 @@ int main(int argc, char **argv)
                     printf("  ----------\n  %s not found by tree.\n", word);
             } else
                 printf("  %s not found by bloom filter.\n", word);
+            if (argc > 2 && strcmp(argv[1], "--bench") == 0)  // a for auto
+                goto quit;
             break;
         case 's':
             printf("find words matching prefix (at least 1 char): ");
@@ -223,6 +225,8 @@ int main(int argc, char **argv)
                 printf("  deleted %s in %.6f sec\n", word, t2 - t1);
                 idx--;
             }
+            if (argc > 2 && strcmp(argv[1], "--bench") == 0)  // a for auto
+                goto quit;
             break;
         case 'q':
             goto quit;
