@@ -329,7 +329,7 @@ void tst_suggest(const tst_node *p,
     tst_suggest(p->lokid, c, nchr, a, n, max);
     if (p->key)
         tst_suggest(p->eqkid, c, nchr, a, n, max);
-    else if (*(((char *) p->eqkid) + nchr - 1) == c && *n < max)
+    else
         a[(*n)++] = (char *) p->eqkid;
     tst_suggest(p->hikid, c, nchr, a, n, max);
 }
@@ -369,7 +369,7 @@ void *tst_search_prefix(const tst_node *root,
             /* check if prefix number of chars reached */
             if ((size_t)(s - start) == nchr - 1) {
                 /* call tst_suggest to fill a with pointer to matching words */
-                tst_suggest(curr, curr->key, nchr, a, n, max);
+                tst_suggest(curr->eqkid, curr->key, nchr, a, n, max);
                 return (void *) curr;
             }
             if (*s == 0) /* no matching prefix found in tree */
