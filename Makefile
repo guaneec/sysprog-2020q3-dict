@@ -15,7 +15,7 @@ endif
 
 GIT_HOOKS := .git/hooks/applied
 
-.PHONY: all clean
+.PHONY: all clean out_dir
 
 all: $(GIT_HOOKS) $(TESTS)
 
@@ -31,6 +31,10 @@ OBJS := \
     test_common.o \
 
 deps := $(OBJS:%.o=.%.o.d)
+
+
+out_dir:
+	mkdir -p measurement img inputs
 
 test_%: test_%.o $(OBJS_LIB)
 	$(VECHO) "  LD\t$@\n"
@@ -80,5 +84,24 @@ clean:
 	$(RM) $(deps)
 	$(RM) bench_cpy.txt bench_ref.txt ref.txt cpy.txt
 	$(RM) *.csv
+
+cities_split_uniq.txt: cities.txt
+	cat cities.txt | tr ',' '\n' | awk '{$1=$1};1' | awk '!seen[$0]++' > cities_split_uniq.txt
+
+
+img/l-full.png: out_dir test_all cities_split_uniq.txt
+	match=full . data_scripts/l-data.sh
+	match=full gnuplot data_scripts/l.gp
+
+
+img/l-almost.png: out_dir test_all cities_split_uniq.txt
+	match=almost . data_scripts/l-data.sh
+	match=almost gnuplot data_scripts/l.gp
+
+	
+img/l-none.png: out_dir test_all cities_split_uniq.txt
+	match=none . data_scripts/l-data.sh
+	match=none gnuplot data_scripts/l.gp
+
 
 -include $(deps)

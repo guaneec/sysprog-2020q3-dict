@@ -7,3 +7,9 @@ bench_ref.txt
 cpy_data.csv
 ref_data.csv
 test_common
+measurement/
+.vscode/
+.ipynb_checkpoints/
+inputs/
+img/
+cities_split_uniq.txt
