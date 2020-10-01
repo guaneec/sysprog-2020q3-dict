@@ -86,7 +86,7 @@ clean:
 	$(RM) *.csv
 
 cities_split_uniq.txt: cities.txt
-	cat cities.txt | tr ',' '\n' | awk '{$1=$1};1' | awk '!seen[$0]++' > cities_split_uniq.txt
+	cat cities.txt | tr ',' '\n' | awk '{$$1=$$1};1' | awk '!seen[$$0]++' > cities_split_uniq.txt
 
 
 img/l-full.png: out_dir test_all cities_split_uniq.txt
@@ -102,6 +102,18 @@ img/l-almost.png: out_dir test_all cities_split_uniq.txt
 img/l-none.png: out_dir test_all cities_split_uniq.txt
 	match=none . data_scripts/l-data.sh
 	match=none gnuplot data_scripts/l.gp
+
+img/n-full.png: out_dir test_all cities_split_uniq.txt
+	export match=full; ./data_scripts/n-data.sh
+	match=full gnuplot data_scripts/n.gp
+
+img/n-almost.png: out_dir test_all cities_split_uniq.txt
+	export match=almost; ./data_scripts/n-data.sh
+	match=almost gnuplot data_scripts/n.gp
+	
+img/n-none.png: out_dir test_all cities_split_uniq.txt
+	export match=none; ./data_scripts/n-data.sh
+	match=none gnuplot data_scripts/n.gp
 
 
 -include $(deps)

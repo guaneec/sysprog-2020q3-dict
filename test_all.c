@@ -166,14 +166,14 @@ int bench_n()
         }
         if (n && !(n % PROBE_LENGTH)) {
             printf("testing with n=%d\n", n);
-            for (int j = 0; j < 10000; ++j) {
+            for (int j = 0; j < 1000; ++j) {
                 t1 = tvgetf();
                 for (int i = 0; i < n_probe; ++i) {
                     if (!bloom || bloom_test(bloom, probes[i]))
                         tst_search(root, probes[i]);
                 }
                 t2 = tvgetf();
-                fprintf(log_file, "%d %f\n", n / 1000, (t2 - t1) * 1000);
+                fprintf(log_file, "%d %e\n", n / 1000, t2 - t1);
             }
         }
     }
