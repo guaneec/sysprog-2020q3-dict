@@ -199,7 +199,7 @@ int main(int argc, char **argv)
             res = tst_search_prefix(root, word, sgl, &sidx, LMAX);
             t2 = tvgetf();
             if (res) {
-                printf("  %s - searched prefix in %.6f sec\n\n", word, t2 - t1);
+                printf("  %s - searched prefix in %e sec\n\n", word, t2 - t1);
                 for (int i = 0; i < sidx; i++)
                     printf("suggest[%d] : %s\n", i, sgl[i]);
             } else
