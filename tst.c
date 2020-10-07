@@ -4,6 +4,28 @@
 #define WRDMAX 128
 #define STKMAX (WRDMAX * 2)
 
+/* This macro is used to replace some repeating pattern for rotating and
+ * deleting the node on ternary search tree. It will append kid of victim on
+ * suitable position, then free victim itself. Note that 'kid' should be
+ * victim->lokid or victim->hikid
+ */
+#define del_node(parent, victim, root, kid)   \
+    do {                                      \
+        if (!parent) {                        \
+            *root = kid;                      \
+        } else {                              \
+            if (victim == parent->lokid)      \
+                parent->lokid = kid;          \
+            else if (victim == parent->hikid) \
+                parent->hikid = kid;          \
+            else                              \
+                parent->eqkid = kid;          \
+        }                                     \
+        free(victim);                         \
+        victim = NULL;                        \
+    } while (0)
+
+
 /** ternary search tree node. */
 typedef struct tst_node {
     char key;               /* char key for node (null for node with string) */
@@ -91,39 +113,17 @@ static void *tst_del_word(tst_node **root,
                  * rotate victim->lokid to place of victim.
                  */
                 victim->lokid->hikid = victim->hikid;
-                if (!parent)
-                    *root = victim->lokid;
-                else if (victim == parent->lokid)
-                    parent->lokid = victim->lokid;
-                else if (victim == parent->hikid)
-                    parent->hikid = victim->lokid;
-                else
-                    parent->eqkid = victim->lokid;
-                free(victim);
-                victim = NULL;
+                del_node(parent, victim, root, victim->lokid);
             } else if (!victim->hikid->lokid) { /* check for lokid in hi tree */
                 /* opposite rotation */
                 victim->hikid->lokid = victim->lokid;
-                if (!parent)
-                    *root = victim->hikid;
-                else if (victim == parent->lokid)
-                    parent->lokid = victim->hikid;
-                else if (victim == parent->hikid)
-                    parent->hikid = victim->hikid;
-                else
-                    parent->eqkid = victim->hikid;
-                free(victim);
-                victim = NULL;
+                del_node(parent, victim, root, victim->hikid);
             } else /* can't rotate, return, leaving victim->eqkid NULL */
                 return NULL;
         } else if (victim->lokid) { /* only lokid, replace victim with lokid */
-            parent->eqkid = victim->lokid;
-            free(victim);
-            victim = NULL;
+            del_node(parent, victim, root, victim->lokid);
         } else if (victim->hikid) { /* only hikid, replace victim with hikid */
-            parent->eqkid = victim->hikid;
-            free(victim);
-            victim = NULL;
+            del_node(parent, victim, root, victim->hikid);
         } else { /* victim - no children, but parent has other children */
             if (victim == parent->lokid) { /* if parent->lokid - trim */
                 parent->lokid = NULL;
@@ -143,58 +143,20 @@ static void *tst_del_word(tst_node **root,
                     /* same checks and rotations as above */
                     if (!victim->lokid->hikid) {
                         victim->lokid->hikid = victim->hikid;
-                        if (!parent)
-                            *root = victim->lokid;
-                        else if (victim == parent->lokid)
-                            parent->lokid = victim->lokid;
-                        else if (victim == parent->hikid)
-                            parent->hikid = victim->lokid;
-                        else
-                            parent->eqkid = victim->lokid;
-                        free(victim);
-                        victim = NULL;
+                        del_node(parent, victim, root, victim->lokid);
                     } else if (!victim->hikid->lokid) {
                         victim->hikid->lokid = victim->lokid;
-                        if (!parent)
-                            *root = victim->hikid;
-                        else if (victim == parent->lokid)
-                            parent->lokid = victim->hikid;
-                        else if (victim == parent->hikid)
-                            parent->hikid = victim->hikid;
-                        else
-                            parent->eqkid = victim->hikid;
-                        free(victim);
-                        victim = NULL;
+                        del_node(parent, victim, root, victim->hikid);
                     } else
                         return NULL;
                 }
                 /* if only lokid, rewire to parent */
                 else if (victim->lokid) {
-                    if (parent) { /* if parent exists, rewire */
-                        if (victim == parent->lokid)
-                            parent->lokid = victim->lokid;
-                        else if (victim == parent->hikid)
-                            parent->hikid = victim->lokid;
-                        else
-                            parent->eqkid = victim->lokid;
-                    } else /* we are new root node, update root */
-                        *root = victim->lokid; /* make last node root */
-                    free(victim);
-                    victim = NULL;
+                    del_node(parent, victim, root, victim->lokid);
                 }
                 /* if only hikid, rewire to parent */
                 else if (victim->hikid) {
-                    if (parent) { /* if parent exists, rewire */
-                        if (victim == parent->lokid)
-                            parent->lokid = victim->hikid;
-                        else if (victim == parent->hikid)
-                            parent->hikid = victim->hikid;
-                        else
-                            parent->eqkid = victim->hikid;
-                    } else /* we are new root node, update root */
-                        *root = victim->hikid; /* make last node root */
-                    free(victim);
-                    victim = NULL;
+                    del_node(parent, victim, root, victim->hikid);
                 }
             }
         }
@@ -205,19 +167,34 @@ static void *tst_del_word(tst_node **root,
     return victim; /* return NULL on successful free, *node otherwise */
 }
 
-/** tst_ins_del() ins/del copy or reference of 's' from ternary search tree.
- *  insert all nodes required for 's' in tree at eqkid node of leaf. if 'del'
- *  is non-zero deletes 's' from tree, otherwise insert 's' at node->eqkid
- *  with node->key set to the nul-character after final node in search path. if
- *  'cpy' is non-zero allocate storage for 's', otherwise save pointer to 's'.
- *  if 's' already exists in tree, increment node->refcnt. (to be used for del).
- *  returns address of 's' in tree on successful insert (or on delete if refcnt
- *  non-zero), NULL on allocation failure on insert, or on successful removal
- *  of 's' from tree.
+/** next_node()find out the next node based on the char from 's' for searching
+ *  given string from ternary search tree. If char equal the key of current
+ *  node, move forward the char ptr which 's' is pointing, for preparing
+ *  next comparison. Return a ptr to ptr to next node.
  */
-void *tst_ins_del(tst_node **root, const char *s, const int del, const int cpy)
+static tst_node **next_node(tst_node **root, const char **s)
 {
-    int diff;
+    int diff = **s - (*root)->key;
+    if (diff == 0) {
+        (*s)++;
+        root = &(*root)->eqkid;
+    } else if (diff < 0)
+        root = &(*root)->lokid;
+    else
+        root = &(*root)->hikid;
+    return root;
+}
+
+/** tst_del() del copy or reference of 's' from ternary search tree.
+ *  If 's' already exists in tree, decrement node->refcnt.
+ *  If node->refcnt is zero after decrement, remove assoshiated nodes.
+ *  If 'cpy' is non-zero, free the allocated space of string.
+ *  Returns the address of 's' in tree on delete if refcnt non-zero,
+ *  -1 on 's' not found in ternary search tree,
+ *  otherwise returns NULL.
+ */
+void *tst_del(tst_node **root, const char *s, const int cpy)
+{
     const char *p = s;
     tst_stack stk = {.data = {NULL}, .idx = 0};
     tst_node *curr, **pcurr;
@@ -227,31 +204,45 @@ void *tst_ins_del(tst_node **root, const char *s, const int del, const int cpy)
     if (strlen(s) + 1 > STKMAX / 2) /* limit length to 1/2 STKMAX */
         return NULL;                /* 128 char word length is plenty */
 
-    pcurr = root;                     /* start at root */
-    while ((curr = *pcurr)) {         /* iterate to insertion node  */
-        diff = *p - curr->key;        /* get ASCII diff for >, <, = */
-        if (diff == 0) {              /* if char equal to node->key */
-            if (*p++ == 0) {          /* check if word is duplicate */
-                if (del) {            /* delete instead of insert   */
-                    (curr->refcnt)--; /* decrement reference count  */
-                    /* chk refcnt, del 's', return NULL on successful del */
-                    return tst_del_word(root, curr, &stk, cpy);
-                } else
-                    curr->refcnt++; /* increment refcnt if word exists */
-                return (void *) curr->eqkid; /* pointer to word / NULL on del */
-            }
-            pcurr = &(curr->eqkid); /* get next eqkid pointer address */
-        } else if (diff < 0) {      /* if char less than node->key */
-            pcurr = &(curr->lokid); /* get next lokid pointer address */
-        } else {                    /* if char greater than node->key */
-            pcurr = &(curr->hikid); /* get next hikid pointer address */
+    pcurr = root;
+    while ((curr = *pcurr)) {
+        if (*p == 0 && curr->key == 0) {
+            (*pcurr)->refcnt--;
+            return tst_del_word(root, curr, &stk, cpy);
         }
-        if (del)
-            tst_stack_push(&stk, curr); /* push node on stack for del */
+        tst_stack_push(&stk, curr); /* push node on stack for del */
+        pcurr = next_node(pcurr, &p);
     }
+    return (void *) -1;
+}
 
-    if (del)
-        return (void *) -1;
+/** tst_ins() insert copy or reference of 's' from ternary search tree.
+ *  insert all nodes required for 's' in tree at eqkid node of leaf.
+ *  Insert 's' at node->eqkid with node->key set to the nul-character after
+ *  final node in search path.
+ *  If 'cpy' is non-zero allocate storage for 's', otherwise save pointer to
+ *  's'. If 's' already exists in tree, increment node->refcnt. (to be used
+ *  for del). returns address of 's' in tree on successful insert , NULL on
+ *  allocation failure.
+ */
+void *tst_ins(tst_node **root, const char *s, const int cpy)
+{
+    const char *p = s;
+    tst_node *curr, **pcurr;
+
+    if (!root || !s)
+        return NULL;                /* validate parameters */
+    if (strlen(s) + 1 > STKMAX / 2) /* limit length to 1/2 STKMAX */
+        return NULL;                /* 128 char word length is plenty */
+
+    pcurr = root;
+    while ((curr = *pcurr)) {
+        if (*p == 0 && curr->key == 0) {
+            curr->refcnt++;
+            return (void *) curr->eqkid;
+        }
+        pcurr = next_node(pcurr, &p);
+    }
 
     /* if not duplicate, insert remaining chars into tree rooted at curr */
     for (;;) {
@@ -267,9 +258,6 @@ void *tst_ins_del(tst_node **root, const char *s, const int del, const int cpy)
         curr->key = *p;
         curr->refcnt = 1;
         curr->lokid = curr->hikid = curr->eqkid = NULL;
-
-        if (!*root) /* handle assignment to root if no root */
-            *root = *pcurr;
 
         /* Place nodes until end of the string, at end of stign allocate
          * space for data, copy data as final eqkid, and return.

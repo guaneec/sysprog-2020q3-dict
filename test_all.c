@@ -60,7 +60,7 @@ int bench_len()
     int n = 0;
     while ((wordlen = getline(&word, &_n, in_file)) > 1) {
         word[wordlen - 1] = '\0';
-        tst_ins_del(&root, word, 0, 1);
+        tst_ins(&root, word, 1);
         ++n;
         if (bloom) {
             bloom_add(bloom, word);
@@ -160,7 +160,7 @@ int bench_n()
     while ((wordlen = getline(&word, &_n, in_file)) > 1) {
         ++n;
         word[wordlen - 1] = '\0';
-        tst_ins_del(&root, word, 0, 1);
+        tst_ins(&root, word, 1);
         if (bloom) {
             bloom_add(bloom, word);
         }
